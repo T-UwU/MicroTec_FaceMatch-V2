@@ -120,7 +120,7 @@ InsightFace (ArcFace + ONNX Runtime, sin dependencia de TensorFlow/Keras).
 
 ### Cómo funciona la cascada
 
-La comparación funciona como una cascada de dos etapas:
+La comparación funciona como en dos etapas:
 
 1. **Detección compartida.** `_detect_and_align()` corre la detección una sola
    vez sobre la INE y todos los frames, y entrega recortes alineados de 112×112
@@ -132,14 +132,10 @@ La comparación funciona como una cascada de dos etapas:
    la INE.
 3. **Etapa 2: modelo fuerte (r100).** El modelo glint360k ResNet100
    (`antelopev2`) re-evalúa solo la INE y los `K` mejores frames
-   (`_CASCADE_K = 2`). El score final es la **similitud máxima** sobre esos
+   (`_CASCADE_K = 2`). El score final es la similitud máxima sobre esos
    frames toma el máximo, recupera el frame bueno que un
    usuario genuino puede mostrar solo un instante. Si el modelo fuerte no está
    disponible, hace fallback a r50 y lo registra en el log.
-
-**Idea clave:** el modelo rápido (r50) descarta y ordena *todos* los frames; el
-modelo fuerte (r100) confirma solo la INE y los 2 mejores candidatos. Se obtiene
-la precisión del modelo grande pagando su costo en apenas 3 imágenes.
 
 > El modelo `antelopev2` se descarga automáticamente la primera vez que se usa.
 > `warmup_deepface()` precarga ambos modelos para que la primera petición sea
