@@ -1,23 +1,20 @@
 # Face Anti-Spoofing API
 
-API de detección de vida (*liveness detection*). Recibe un video y determina si
+API de detección de vida. Recibe un video y determina si
 es una persona real o un intento de suplantación (*spoof*). Opcionalmente, si se
 envía también la foto de una INE, hace comparación de rostros (*face match*)
 entre el video y la credencial.
 
 **Estado del comparador de rostro:** la verificación INE vs. video usa una
 **cascada de dos modelos (r50 → r100)**, adoptada tras validarse sobre casos
-reales (ver [§ Comparación de rostros](#comparación-de-rostros-face_comparisonpy)).
-Pendiente: calibración final del umbral con un set de impostores.
-
+reales.
 
 
 ## Requisitos
 
 - Python 3.10+
 - No requiere GPU para funcionar. La cascada de *face match* corre ~2× más lenta
-  en CPU; si el SLA de latencia es crítico, desplegar en GPU (ver
-  [§ Velocidad y trade-off](#velocidad-y-trade-off)).
+  en CPU; si el SLA de latencia es crítico, desplegar en GPU.
 
 
 
