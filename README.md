@@ -162,10 +162,7 @@ Otros cambios en el código:
 
 ### Validación e impacto
 
-Conjunto de prueba: 47 casos con veredicto REAL (persona genuina) y comparación
-de rostro, de los reportes `response.json` provistos. Se validó la línea base
-ejecutando el código de producción sobre los mismos videos: los scores
-reproducen los de los `response.json` con diferencia máxima de 0.02.
+Conjunto de prueba: 47 casos con veredicto REAL y comparaciónde rostro.
 
 Selección de `K`: se probó re-evaluar con r100 los top-1, top-2 y top-3 frames.
 **K=2 es el mínimo que mantiene a todos los genuinos por encima del umbral**;
@@ -193,25 +190,12 @@ K=1 reintroduce un falso rechazo (caso 171349 → 39.7).
 | 171348 | 46.0 | 47.2 | +1.2 |
 | 171415 | 49.2 | 49.6 | +0.4 |
 
-La cascada **elimina la totalidad de los falsos rechazos** del conjunto de
-prueba y sube el piso de score genuino (mínimo 35 → 42). Las dos únicas
-regresiones (−0.41 y −0.27) ocurren en casos con score ~51–53, muy por encima
-del umbral: no afectan ninguna decisión.
-
-### Velocidad y trade-off
+### Velocidad
 
 | | Producción | Cascada |
 | --- | --- | --- |
 | `face_match` en CPU (media) | ~1.2 s | ~2.6 s |
 | Rango observado | 0.9 – 2.4 s | 2.4 – 2.7 s |
-
-La cascada es ~2× más lenta en CPU: hace detección sobre todos los frames, los
-embebe con r50 para rankear y luego corre r100 sobre 3 imágenes (`K + 1`
-embeddings). Ese r100 extra es el costo de recuperar los casos difíciles. En
-**GPU** el sobrecosto prácticamente desaparece (estimado ~0.5 s end-to-end).
-
-El intercambio es **precisión por latencia**. Para recuperar velocidad sin
-perder precisión: desplegar en GPU (elimina casi
 
 
 ## Estructura
