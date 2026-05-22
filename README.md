@@ -134,13 +134,13 @@ La comparación funciona como una **cascada de dos etapas**:
    que alimentan ambos modelos de reconocimiento. La selección por rostro más
    grande maneja el retrato holográfico tenue de la INE (la foto principal es la
    detección más grande).
-2. **Etapa 1 — modelo rápido (r50).** El modelo de reconocimiento de `buffalo_l`
+2. **Etapa 1: modelo rápido (r50).** El modelo de reconocimiento de `buffalo_l`
    genera embeddings de todos los frames y los ordena por similitud real contra
    la INE.
-3. **Etapa 2 — modelo fuerte (r100).** El modelo glint360k ResNet100
+3. **Etapa 2: modelo fuerte (r100).** El modelo glint360k ResNet100
    (`antelopev2`) re-evalúa solo la INE y los `K` mejores frames
    (`_CASCADE_K = 2`). El score final es la **similitud máxima** sobre esos
-   frames; tomar el máximo —en lugar de promediar— recupera el frame bueno que un
+   frames; tomar el máximo:en lugar de promediar— recupera el frame bueno que un
    usuario genuino puede mostrar solo un instante. Si el modelo fuerte no está
    disponible, hace fallback a r50 y lo registra en el log.
 
@@ -191,7 +191,7 @@ K=1 reintroduce un falso rechazo (caso 171349 → 39.7).
 | Mejora media por caso | — | **+4.94** (rango −0.41 a +13.18) |
 | Casos mejorados / empatados / peores | — | 45 / 0 / 2 |
 
-**Zona crítica (scores más bajos — donde se toma la decisión):**
+**Zona crítica (scores más bajos donde se toma la decisión):**
 
 | Caso | Producción | Cascada | Δ |
 | --- | --- | --- | --- |
