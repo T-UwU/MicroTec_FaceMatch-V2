@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Face Anti-Spoofing Demo</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .demo-card {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            border-radius: 20px;
+            padding: 36px 28px;
+            max-width: 420px;
+            width: 100%;
+            text-align: center;
+        }
+        .demo-card h1 { font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+        .demo-card p.sub { color: #888; font-size: 13px; margin-bottom: 28px; }
+
+        .mode-btn {
+            width: 100%;
+            padding: 18px 16px;
+            border: 1px solid #333;
+            border-radius: 14px;
+            background: #111;
+            color: #fff;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s, border-color 0.2s;
+            margin-bottom: 12px;
+            text-align: left;
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .mode-btn:hover { background: #1e1e1e; border-color: #555; }
+        .mode-btn .icon {
+            width: 44px; height: 44px; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px; flex-shrink: 0;
+        }
+        .mode-btn .icon.live { background: #5f2978; }
+        .mode-btn .icon.match { background: #0e7490; }
+        .mode-btn .texts { flex: 1; }
+        .mode-btn .texts span { display: block; font-size: 12px; color: #888; font-weight: 400; margin-top: 3px; }
+
+        .ine-section {
+            background: #111;
+            border: 1px dashed #444;
+            border-radius: 14px;
+            padding: 20px 16px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        .ine-section label { font-size: 13px; color: #aaa; display: block; margin-bottom: 10px; }
+        .ine-section input[type="file"] { display: none; }
+        .ine-btn {
+            display: inline-block; padding: 10px 24px;
+            border: 1px solid #555; border-radius: 10px;
+            background: transparent; color: #fff; font-size: 13px; cursor: pointer;
+            transition: background 0.2s;
+        }
+        .ine-btn:hover { background: #333; }
+        .ine-preview { margin-top: 12px; display: none; }
+        .ine-preview img { max-width: 100%; max-height: 140px; border-radius: 8px; border: 1px solid #333; }
+        .ine-preview .ine-name { font-size: 11px; color: #888; margin-top: 6px; }
+        .ine-preview .ine-remove { font-size: 11px; color: #ef4444; cursor: pointer; margin-top: 4px; }
+
+        .confirm-btn {
+            width: 100%; padding: 16px; border: none; border-radius: 14px;
+            background: #0e7490; color: #fff; font-size: 15px; font-weight: 700;
+            cursor: pointer; display: none; transition: background 0.2s;
+        }
+        .confirm-btn:hover { background: #0891b2; }
+        .confirm-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        .back-link {
+            display: none; margin-top: 14px; font-size: 12px;
+            color: #666; cursor: pointer; text-decoration: underline;
+        }
+        .back-link:hover { color: #aaa; }
+
+        #sdk-container { display: none; }
+
+        .result-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.92);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 10000; padding: 20px;
+        }
+        .result-box {
+            background: #1a1a1a; border-radius: 20px; max-width: 480px; width: 100%;
+            padding: 32px 24px; text-align: center; max-height: 90vh; overflow-y: auto;
+        }
+        .result-icon {
+            width: 64px; height: 64px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 32px; font-weight: 700; margin: 0 auto 16px;
+        }
+        .result-icon.real { background: #22c55e; }
+        .result-icon.spoof { background: #ef4444; }
+        .result-icon.rejected { background: #f59e0b; }
+        .result-json {
+            background: #111; border: 1px solid #333; border-radius: 10px;
+            padding: 16px; text-align: left;
+            font-family: 'SF Mono', 'Fira Code', monospace; font-size: 12px; color: #ccc;
+            overflow-x: auto; white-space: pre-wrap; word-break: break-word;
+            margin: 16px 0; max-height: 300px; overflow-y: auto;
+        }
+        .result-box button {
+            width: 100%; padding: 14px; border: none; border-radius: 14px;
+            background: #5f2978; color: #fff; font-weight: 700; font-size: 15px; cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+<div class="demo-card" id="demo-card">
+    <h1>Face Anti-Spoofing</h1>
+    <p class="sub">Selecciona el tipo de verificacion</p>
+
+    <!-- Paso 1: elegir modo -->
+    <div id="step-modes">
+        <button class="mode-btn" id="btn-liveness" onclick="selectMode('liveness')">
+            <div class="icon live">&#128247;</div>
+            <div class="texts">
+                Prueba de vida
+                <span>Verifica que sea una persona real</span>
+            </div>
+        </button>
+
+        <button class="mode-btn" id="btn-match" onclick="selectMode('match')">
+            <div class="icon match">&#128100;</div>
+            <div class="texts">
+                Prueba de vida + Face Match
+                <span>Liveness + comparacion con INE</span>
+            </div>
+        </button>
+    </div>
+
+    <!-- Paso 2: subir INE (solo modo match) -->
+    <div class="ine-section" id="ine-section">
+        <label>Sube la imagen de la INE para comparar</label>
+        <button class="ine-btn" id="ine-btn" onclick="document.getElementById('ine-input').click()">
+            Seleccionar imagen
+        </button>
+        <input type="file" id="ine-input" accept="image/*">
+        <div class="ine-preview" id="ine-preview">
+            <img id="ine-thumb" src="" alt="INE preview">
+            <div class="ine-name" id="ine-name"></div>
+            <div class="ine-remove" onclick="removeIne()">Quitar imagen</div>
+        </div>
+    </div>
+
+    <button class="confirm-btn" id="confirm-btn" onclick="startProcess()">
+        Iniciar verificacion
+    </button>
+    <div class="back-link" id="back-link" onclick="goBack()">← Cambiar modo</div>
+</div>
+
+<div id="sdk-container"></div>
+
+<script type="module">
+    import { FilesetResolver, FaceLandmarker } from "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.18/vision_bundle.mjs";
+    window.FilesetResolver = FilesetResolver;
+    window.FaceLandmarker = FaceLandmarker;
+    window.dispatchEvent(new Event("mediapipe-ready"));
+</script>
+<script src="view.js"></script>
+<script>
+    var selectedMode = null;
+    var selectedIneFile = null;
+
+    window.selectMode = function(mode) {
+        selectedMode = mode;
+        document.getElementById('step-modes').style.display = 'none';
+        document.getElementById('back-link').style.display = 'block';
+
+        if (mode === 'liveness') {
+            document.getElementById('ine-section').style.display = 'none';
+            document.getElementById('confirm-btn').style.display = 'block';
+            document.getElementById('confirm-btn').textContent = 'Iniciar prueba de vida';
+            document.getElementById('confirm-btn').style.background = '#5f2978';
+            document.getElementById('confirm-btn').disabled = false;
+        } else {
+            document.getElementById('ine-section').style.display = 'block';
+            document.getElementById('confirm-btn').style.display = 'block';
+            document.getElementById('confirm-btn').textContent = 'Iniciar prueba de vida + match';
+            document.getElementById('confirm-btn').style.background = '#0e7490';
+            document.getElementById('confirm-btn').disabled = !selectedIneFile;
+        }
+    };
+
+    window.goBack = function() {
+        selectedMode = null;
+        selectedIneFile = null;
+        document.getElementById('ine-input').value = '';
+        document.getElementById('ine-preview').style.display = 'none';
+        document.getElementById('ine-btn').textContent = 'Seleccionar imagen';
+        document.getElementById('step-modes').style.display = 'block';
+        document.getElementById('ine-section').style.display = 'none';
+        document.getElementById('confirm-btn').style.display = 'none';
+        document.getElementById('back-link').style.display = 'none';
+    };
+
+    document.getElementById('ine-input').addEventListener('change', function(e) {
+        var file = e.target.files[0];
+        if (!file) return;
+        selectedIneFile = file;
+        document.getElementById('ine-thumb').src = URL.createObjectURL(file);
+        document.getElementById('ine-name').textContent = file.name;
+        document.getElementById('ine-preview').style.display = 'block';
+        document.getElementById('ine-btn').textContent = 'Cambiar imagen';
+        document.getElementById('confirm-btn').disabled = false;
+    });
+
+    window.removeIne = function() {
+        selectedIneFile = null;
+        document.getElementById('ine-input').value = '';
+        document.getElementById('ine-preview').style.display = 'none';
+        document.getElementById('ine-btn').textContent = 'Seleccionar imagen';
+        if (selectedMode === 'match') {
+            document.getElementById('confirm-btn').disabled = true;
+        }
+    };
+
+    window.startProcess = function() {
+        document.getElementById('demo-card').style.display = 'none';
+        var container = document.getElementById('sdk-container');
+        container.style.display = 'block';
+
+        var sdk = new CredicelTestlifeSDK({
+            containerElement: container,
+            transactionId: 'demo-' + Date.now(),
+            biometricIdentifier: 'demo',
+            primaryColor: '#5f2978',
+            secundaryColor: '#00d4ff',
+            successCallback: function(data) {
+                showResult(data.result);
+            },
+            sendDataCallback: function() {
+                console.log('[demo] Video captured, uploading...');
+            },
+            errorCallback: function(err) {
+                console.error('[demo] Error:', err);
+                document.getElementById('demo-card').style.display = 'block';
+                container.style.display = 'none';
+                goBack();
+            }
+        });
+
+        if (selectedMode === 'match' && selectedIneFile) {
+            sdk.setIneImage(selectedIneFile);
+        }
+
+        sdk.bioTestlifeProcess();
+    };
+
+    function showResult(result) {
+        var decision = result.decision || 'UNKNOWN';
+        var iconClass = decision === 'REAL' ? 'real' : (decision === 'SPOOF' ? 'spoof' : 'rejected');
+        var icon = decision === 'REAL' ? '\u2713' : (decision === 'SPOOF' ? '\u2717' : '!');
+
+        var matchHtml = '';
+        if (result.face_match && !result.face_match.skipped) {
+            var m = result.face_match;
+            var mColor = m.match ? '#22c55e' : '#ef4444';
+            matchHtml =
+                '<div style="background:#111;border:1px solid #333;border-radius:12px;padding:14px;margin:12px 0;text-align:left">' +
+                    '<div style="font-size:13px;color:#888;margin-bottom:6px">Face Match</div>' +
+                    '<div style="font-size:22px;font-weight:700;color:' + mColor + '">' +
+                        (m.match ? 'COINCIDE' : 'NO COINCIDE') +
+                    '</div>' +
+                    '<div style="font-size:13px;color:#aaa;margin-top:4px">' +
+                        'Similitud: ' + (m.similarity_score || 0) + '%' +
+                    '</div>' +
+                '</div>';
+        } else if (result.face_match && result.face_match.skipped) {
+            matchHtml =
+                '<div style="background:#111;border:1px solid #333;border-radius:12px;padding:14px;margin:12px 0">' +
+                    '<div style="font-size:13px;color:#f59e0b">Face Match omitido: ' + result.face_match.reason + '</div>' +
+                '</div>';
+        }
+
+        var overlay = document.createElement('div');
+        overlay.className = 'result-overlay';
+        overlay.innerHTML =
+            '<div class="result-box">' +
+                '<div class="result-icon ' + iconClass + '">' + icon + '</div>' +
+                '<h2 style="margin-bottom:4px">' + decision + '</h2>' +
+                '<p style="color:#888;font-size:13px;margin-bottom:4px">' +
+                    (result.reasoning || '') +
+                '</p>' +
+                matchHtml +
+                '<div class="result-json">' + JSON.stringify(result, null, 2) + '</div>' +
+                '<button onclick="location.reload()">Nueva verificacion</button>' +
+            '</div>';
+        document.body.appendChild(overlay);
+    }
+</script>
+
+</body>
+</html>
