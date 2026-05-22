@@ -124,9 +124,7 @@ La comparación funciona como en dos etapas:
 
 1. **Detección compartida.** `_detect_and_align()` corre la detección una sola
    vez sobre la INE y todos los frames, y entrega recortes alineados de 112×112
-   que alimentan ambos modelos de reconocimiento. La selección por rostro más
-   grande maneja el retrato holográfico tenue de la INE (la foto principal es la
-   detección más grande).
+   que alimentan ambos modelos de reconocimiento.
 2. **Etapa 1: modelo rápido (r50).** El modelo de reconocimiento de `buffalo_l`
    genera embeddings de todos los frames y los ordena por similitud real contra
    la INE.
