@@ -244,6 +244,3 @@ face-antispoofing-api/
 ├── requirements.txt
 └── setup.sh
 ```
-
-Implementación de la cascada: `app/face_comparison.py`
-(rama `claude/review-project-OEl84`).
