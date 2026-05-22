@@ -32,10 +32,6 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-> Pre-descargar el modelo `antelopev2` (r100) en el despliegue para evitar la
-> descarga de ~360 MB en el primer request.
-
-
 
 ## Servidor
 
@@ -124,7 +120,7 @@ InsightFace (ArcFace + ONNX Runtime, sin dependencia de TensorFlow/Keras).
 
 ### Cómo funciona la cascada
 
-La comparación funciona como una **cascada de dos etapas**:
+La comparación funciona como una cascada de dos etapas:
 
 1. **Detección compartida.** `_detect_and_align()` corre la detección una sola
    vez sobre la INE y todos los frames, y entrega recortes alineados de 112×112
@@ -137,7 +133,7 @@ La comparación funciona como una **cascada de dos etapas**:
 3. **Etapa 2: modelo fuerte (r100).** El modelo glint360k ResNet100
    (`antelopev2`) re-evalúa solo la INE y los `K` mejores frames
    (`_CASCADE_K = 2`). El score final es la **similitud máxima** sobre esos
-   frames; tomar el máximo:en lugar de promediar— recupera el frame bueno que un
+   frames toma el máximo, recupera el frame bueno que un
    usuario genuino puede mostrar solo un instante. Si el modelo fuerte no está
    disponible, hace fallback a r50 y lo registra en el log.
 
