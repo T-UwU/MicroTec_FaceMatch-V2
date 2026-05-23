@@ -1,21 +1,6 @@
 """Face comparison: extract best frame from video and compare against INE photo.
 
-Uses InsightFace (ArcFace + ONNX Runtime) — no TensorFlow/Keras dependency.
-
-Design notes:
-- Two-stage cascade. The buffalo_l detector + r50 recognition model embed every
-  frame cheaply and rank them by similarity to the INE; the stronger glint360k
-  ResNet100 model (antelopev2) then re-scores only the INE and the top-K frames.
-  Validated on 64 real cases: the r100 comparator lifts the genuine score floor
-  (min 35 -> 42) and recovers the false rejects that r50 produced on hard
-  appearance-gap pairs, while the cascade keeps r100 cost to K+1 embeddings.
-- Detection is shared across both stages (run once, batched recognition).
-- Loads only detection + recognition (`allowed_modules`); the unused 2D/3D
-  landmark and gender-age models are skipped.
-
-NOTE: r100 scores run higher than r50, so the decision threshold must be
-recalibrated for this scale (final FAR calibration needs impostor samples).
-"""
+Uses InsightFace (ArcFace + ONNX Runtime) — no TensorFlow/Keras dependency."""
 
 import os
 import glob
@@ -30,20 +15,15 @@ logger = logging.getLogger(__name__)
 
 _MAX_INE_DIMENSION = 1200
 _DET_SIZE = (640, 640)
-_CASCADE_K = 2  # frames re-scored by the strong model (validated: keeps all genuine above threshold)
+_CASCADE_K = 2  
 
-# --- InsightFace models (lazy loaded) ---
+
 _face_app = None
 _strong_rec = None
 
 
 def _get_face_app():
-    """Lazy-load InsightFace with detection + recognition only.
-
-    Same models and alignment as the full buffalo_l pipeline, so embeddings
-    (and therefore the similarity score) are unchanged — just without the
-    unused landmark and gender-age inference on every face.
-    """
+    """Lazy-load InsightFace with detection + recognition only."""
     global _face_app
     if _face_app is not None:
         return _face_app
@@ -61,11 +41,7 @@ def _get_face_app():
 
 
 def _get_strong_rec():
-    """Lazy-load the glint360k ResNet100 recognition model (antelopev2).
-
-    Downloads the antelopev2 pack on first use if it isn't cached. Returns None
-    if it can't be loaded, so the caller can fall back to the r50 model.
-    """
+    """Lazy-load the glint360k ResNet100 recognition model (antelopev2)."""
     global _strong_rec
     if _strong_rec is not None:
         return _strong_rec
@@ -102,8 +78,6 @@ def warmup_deepface():
         logger.warning("InsightFace warm-up failed: %s", exc)
 
 
-# --- Data classes ---
-
 @dataclass
 class BestFrameInfo:
     frame_index: int
@@ -120,9 +94,6 @@ class FaceMatchResult:
     threshold_used: float
     best_frame_info: dict
     error: Optional[str] = None
-
-
-# --- Helpers ---
 
 def _laplacian_sharpness(gray: np.ndarray) -> float:
     return float(cv2.Laplacian(gray, cv2.CV_64F).var())
@@ -158,14 +129,7 @@ def _cosine_similarity(emb1: np.ndarray, emb2: np.ndarray) -> float:
 
 
 def _detect_and_align(images: list[np.ndarray]):
-    """Detect the largest face in each image and return aligned 112x112 crops.
-
-    Largest-face selection handles the INE's faint holographic ghost portrait:
-    the main photo is the bigger detection. Returns (crops, positions) where
-    positions[j] is the index in `images` that produced crops[j]; images with no
-    detected face are omitted. The crops feed both recognition models, so
-    detection and alignment run only once.
-    """
+    """Detect the largest face in each image and return aligned 112x112 crops."""
     from insightface.utils import face_align
 
     det = _get_face_app().models["detection"]
@@ -182,10 +146,7 @@ def _detect_and_align(images: list[np.ndarray]):
 
 
 def extract_frames_for_comparison(video_path: str, target_frames: int = 8) -> np.ndarray:
-    """Extract frames at original resolution for face comparison.
-
-    Only extracts 8 frames (not 16) since we only need a few good candidates.
-    """
+    """Extract frames at original resolution for face comparison."""
     cap = cv2.VideoCapture(video_path)
     if not cap.isOpened():
         raise ValueError(f"Cannot open video: {video_path}")
@@ -227,23 +188,12 @@ def extract_frames_for_comparison(video_path: str, target_frames: int = 8) -> np
     return np.array(frames)
 
 
-# --- Face comparison ---
-
 def compare_video_vs_ine(
     frames_bgr: np.ndarray,
     ine_image: np.ndarray,
     threshold: float = 50.0,
 ) -> FaceMatchResult:
-    """Compare video frames against an INE photo with an r50 -> r100 cascade.
-
-    1. Detect and align the INE and every frame once.
-    2. The fast r50 model embeds all crops and ranks the frames by similarity to
-       the INE.
-    3. The strong r100 model re-scores only the INE and the top-K frames; the
-       match score is the max r100 similarity over those frames. Taking the max
-       (rather than fusing) recovers the one good frame a genuine user may show
-       only briefly. Falls back to r50-only max if the strong model is missing.
-    """
+    """Compare video frames against an INE photo with an r50 -> r100 cascade."""
     ine_image = _preprocess_ine_image(ine_image)
 
     crops, positions = _detect_and_align([ine_image, *frames_bgr])
@@ -262,7 +212,6 @@ def compare_video_vs_ine(
             error="No se detectó rostro en los frames del video",
         )
 
-    # Stage 1: fast model ranks frames by similarity to the INE
     fast = _get_face_app().models["recognition"]
     fast_feats = {p: f for p, f in zip(positions, fast.get_feat(crops))}
     ranked = sorted(
@@ -271,7 +220,6 @@ def compare_video_vs_ine(
         reverse=True,
     )
 
-    # Stage 2: strong model re-scores the INE + top-K frames (or fall back to r50)
     strong = _get_strong_rec()
     if strong is not None:
         top = ranked[:_CASCADE_K]
@@ -290,7 +238,7 @@ def compare_video_vs_ine(
             best_similarity = similarity
             best_pos = p
 
-    best_idx = best_pos - 1  # positions are offset by the INE at index 0
+    best_idx = best_pos - 1 
     gray = cv2.cvtColor(frames_bgr[best_idx], cv2.COLOR_BGR2GRAY)
     info = BestFrameInfo(
         frame_index=best_idx,
